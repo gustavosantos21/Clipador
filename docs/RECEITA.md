@@ -73,9 +73,11 @@ Tempos aceitam `83.5`, `"01:23.5"` ou `"00:01:23.500"`.
 
 ## `reframe` — modos
 
-- **`crop`** (preencher): corta para o formato de saída. `x`, `y` de 0 a 1 = posição do corte (0 = esquerda/topo). `x` pode ser keyframes em tempo do bruto: `[["10:41", 0.3], ["10:48", 0.7]]` para acompanhar quem fala. `scale: 1.2` aperta o enquadramento. `rect: [x,y,w,h]` recorta uma região do bruto antes.
+- **`crop`** (preencher): corta para o formato de saída. `x`, `y` de 0 a 1 = posição do corte (0 = esquerda/topo). `x` pode ser keyframes em tempo do bruto: `[["10:41", 0.3], ["10:48", 0.7]]` para acompanhar quem fala.
+  - **`"x": "auto"`** — detecção de rosto: segue a pessoa como um operador de câmera (fica parado enquanto o rosto está na zona morta, move suave quando sai). Opções: `step` (intervalo de amostragem, 0.5 s), `deadzone` (0.07). Sem rosto detectado → centro. `scale: 1.2` aperta o enquadramento. `rect: [x,y,w,h]` recorta uma região do bruto antes.
 - **`blur`**: vídeo inteiro no meio, fundo desfocado (bom para conteúdo 16:9 em 9:16 quando não dá pra cortar). Opções: `fg_y` (`"center"` ou fração), `fg_scale`, `fg_max_h`, `blur`, `darken`.
 - **`fit`**: vídeo inteiro com barras (`color`).
+- **`stream`**: layout de live — **facecam em cima, jogo embaixo**. `facecam: "auto"` detecta a webcam sobreposta (ou `[x,y,w,h]` manual), `ratio` (altura da cam, 0.38), `game_x`/`game_y` (centro do recorte do jogo, 0.5; sem `game_x` o recorte desvia sozinho da webcam — `avoid_facecam: false` desliga), `game_zoom` (1.0), `fallback` (`crop`|`blur`, usado se não houver facecam). Veja o resultado da detecção em `projects/<nome>/work/facecam.jpg`.
 - **`split`**: duas regiões do bruto empilhadas. `top` e `bottom` são `[x,y,w,h]` normalizados; `ratio` = altura da parte de cima (ex.: webcam em cima 0.4, jogo/tela embaixo).
 
 ## `texts[]`

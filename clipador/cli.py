@@ -101,6 +101,63 @@ def cmd_cut(a):
     print(a.out)
 
 
+def cmd_facecam(a):
+    from .faces import detect_facecam
+    res = detect_facecam(a.file, samples=a.samples, debug_image=a.debug)
+    _print(res or {"facecam": None})
+
+
+def cmd_faces(a):
+    from .faces import auto_crop_keyframes
+    _print(auto_crop_keyframes(a.file, parse_time(a.start), parse_time(a.end), a.aspect))
+
+
+def cmd_scan(a):
+    from .highlights import scan
+    res = scan(a.file, a.chat, top=a.top)
+    if a.out:
+        Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(a.out).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
+    for c in res["candidates"]:
+        print(f"{c['id']}  {c['tc']}  ({c['duration']}s)  score {c['score']:5.2f}  {', '.join(c['reasons'])}")
+
+
+def cmd_transcribe_ranges(a):
+    ranges = []
+    if a.candidates:
+        cands = json.loads(Path(a.candidates).read_text())["candidates"]
+        ranges = [(c["start"] - 5, c["end"] + 5) for c in cands[: a.top]]
+    for r in a.range or []:
+        x, y = r.split("~", 1)
+        ranges.append((parse_time(x), parse_time(y)))
+    data = tr.transcribe_ranges(a.file, ranges, a.out, model=a.model, language=a.language or None)
+    print(f"{len(data['segments'])} frases em {a.out}")
+
+
+def cmd_worker(a):
+    from . import jobs
+    stop = jobs.start_workers(a.n)
+    print(f"{a.n} worker(s) consumindo {jobs.DB_PATH}. Ctrl+C para sair.")
+    try:
+        stop.wait()
+    except KeyboardInterrupt:
+        stop.set()
+
+
+def cmd_jobs(a):
+    from . import jobs
+    if a.add:
+        print(jobs.enqueue(a.add, json.loads(a.args or "{}")))
+        return
+    for j in jobs.list_jobs(a.limit):
+        print(f"#{j['id']:<4} {j['kind']:10s} {j['status']:8s} {j['progress']:.0%}  {j['message'][:80]}")
+
+
+def cmd_serve(a):
+    from .server import serve
+    serve(a.host, a.port, a.workers)
+
+
 def cmd_presets(a):
     for k, v in PRESETS.items():
         lim = f"máx {v['max_duration']}s" if v["max_duration"] else "sem limite"
@@ -161,6 +218,40 @@ def main(argv=None):
     s.add_argument("--dry-run", action="store_true", help="só mostra o comando/filtergraph")
     s.add_argument("--preview", action="store_true", help="gera folha de contato do resultado")
     s.set_defaults(fn=cmd_render)
+
+    s = sub.add_parser("facecam", help="detectar a webcam sobreposta numa stream")
+    s.add_argument("file"); s.add_argument("--samples", type=int, default=40); s.add_argument("--debug")
+    s.set_defaults(fn=cmd_facecam)
+
+    s = sub.add_parser("faces", help="keyframes de recorte automático no rosto para um trecho")
+    s.add_argument("file"); s.add_argument("start"); s.add_argument("end")
+    s.add_argument("--aspect", type=float, default=9 / 16)
+    s.set_defaults(fn=cmd_faces)
+
+    s = sub.add_parser("scan", help="candidatos a clipe numa stream longa (áudio + chat)")
+    s.add_argument("file"); s.add_argument("--chat"); s.add_argument("--top", type=int, default=30)
+    s.add_argument("-o", "--out")
+    s.set_defaults(fn=cmd_scan)
+
+    s = sub.add_parser("transcribe-ranges", help="transcrever só trechos (candidatos) de um vídeo longo")
+    s.add_argument("file"); s.add_argument("-o", "--out", required=True)
+    s.add_argument("--candidates", help="candidates.json do scan"); s.add_argument("--top", type=int, default=30)
+    s.add_argument("--range", action="append", help="INICIO~FIM (pode repetir)")
+    s.add_argument("--model", default="small"); s.add_argument("--language", default="pt")
+    s.set_defaults(fn=cmd_transcribe_ranges)
+
+    s = sub.add_parser("worker", help="processar a fila de jobs")
+    s.add_argument("-n", type=int, default=2); s.set_defaults(fn=cmd_worker)
+
+    s = sub.add_parser("jobs", help="listar/adicionar jobs")
+    s.add_argument("--add", help="tipo: scan|transcribe|autospec|render|pipeline")
+    s.add_argument("--args", help="JSON"); s.add_argument("--limit", type=int, default=30)
+    s.set_defaults(fn=cmd_jobs)
+
+    s = sub.add_parser("serve", help="interface web local")
+    s.add_argument("--host", default="127.0.0.1"); s.add_argument("--port", type=int, default=8765)
+    s.add_argument("--workers", type=int, default=2)
+    s.set_defaults(fn=cmd_serve)
 
     s = sub.add_parser("presets", help="listar presets e estilos")
     s.set_defaults(fn=cmd_presets)

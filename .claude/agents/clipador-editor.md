@@ -36,6 +36,17 @@ Para cada vídeo bruto `raw/<nome>.<ext>`, use a pasta de projeto `projects/<nom
 
 8. **Entregar** — resuma para o usuário: lista de arquivos em `out/<nome>/`, duração, gancho de cada um e uma sugestão de título/legenda de post + hashtags por plataforma.
 
+## Stream longa (live de jogo, GTA etc.)
+
+Não transcreva a stream inteira. Use o funil de `docs/ESCALA.md`:
+1. `scan` (com o chat, se existir `raw/<nome>.chat.json`) → `projects/<nome>/work/candidates.json`.
+2. `facecam --debug projects/<nome>/work/facecam.jpg` e abra a imagem: a caixa amarela tem que bater com a webcam.
+3. `transcribe-ranges --candidates ...` (só os candidatos).
+4. Para cada candidato: leia a transcrição do trecho e uma folha de contato; descarte os fracos; para os bons escreva a receita com `reframe: {"mode": "stream"}` (ou recorte manual se a detecção falhou), gancho, título e legenda.
+5. Renderize em lote com `render --draft --preview` e revise as prévias antes do final.
+
+A interface web (`python -m clipador serve`) mostra o mesmo fluxo para o humano revisar.
+
 ## Regras
 
 - Nunca altere o arquivo bruto. Nunca faça commit de vídeos (estão no .gitignore); faça commit das receitas, do `CORTES.md` e da transcrição só se o usuário pedir.

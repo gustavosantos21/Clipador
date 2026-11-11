@@ -13,8 +13,23 @@ pip install -e ".[dev]"
 ```
 
 ```bash
-pip install faster-whisper   # transcrição automática (opcional, recomendado)
+pip install -e ".[tudo]"   # transcrição (faster-whisper), rosto (OpenCV) e interface web
 ```
+
+## Interface web local
+
+```bash
+python -m clipador serve
+```
+
+Abra http://127.0.0.1:8765 — envie o VOD (e o chat `<nome>.chat.json`), clique em **⚡ Automático** e revise candidatos, facecam, receitas e clipes renderizados.
+
+## Streams longas (GTA etc.)
+
+Funil escalável: varredura barata de áudio + chat em tudo → transcrição e edição só dos candidatos → render em fila com vários workers. Detalhes em [docs/ESCALA.md](docs/ESCALA.md).
+
+- `reframe: {"mode": "stream"}` — detecta a webcam da live e monta facecam em cima + jogo embaixo.
+- `reframe: {"mode": "crop", "x": "auto"}` — recorte vertical seguindo o rosto.
 
 ## Uso com o agente
 
@@ -36,4 +51,5 @@ python -m clipador presets
 ## Documentação
 - [Receita JSON — referência de campos](docs/RECEITA.md)
 - [Guia de edição — padrões de estilo](docs/GUIA_DE_EDICAO.md)
+- [Escala para muitas horas de stream](docs/ESCALA.md)
 - [Agente editor](.claude/agents/clipador-editor.md)

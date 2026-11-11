@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clipador</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--line:#2a2f3a;--txt:#e7e9ee;--mut:#8a92a3;--acc:#ffd400;--ok:#3ddc84;--err:#ff5d5d;--blue:#5aa9ff}
+*{box-sizing:border-box}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 Inter,system-ui,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:18px;margin:0;letter-spacing:.3px}header h1 b{color:var(--acc)}
+#jobsum{margin-left:auto;color:var(--mut);font-size:13px}
+.wrap{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 50px)}
+aside{border-right:1px solid var(--line);padding:14px;background:var(--panel);overflow:auto}
+main{padding:16px 20px;overflow:auto}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:18px 0 8px}
+h2:first-child{margin-top:0}
+.file{padding:9px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--panel2)}
+.file:hover{border-color:#3a4150}.file.sel{border-color:var(--acc)}
+.file .n{font-weight:600;word-break:break-all}.file .m{color:var(--mut);font-size:12px;margin-top:2px}
+.chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:#2a2f3a;color:var(--mut);margin:4px 4px 0 0}
+.chip.on{background:#1f3b2b;color:var(--ok)}
+#drop{border:1.5px dashed #3a4150;border-radius:10px;padding:16px;text-align:center;color:var(--mut);cursor:pointer}
+#drop.hover{border-color:var(--acc);color:var(--txt)}
+button{background:#2a2f3a;color:var(--txt);border:1px solid #3a4150;border-radius:7px;padding:7px 12px;font:inherit;cursor:pointer}
+button:hover{border-color:#566}button.pri{background:var(--acc);color:#111;border-color:var(--acc);font-weight:600}
+button.sm{padding:3px 8px;font-size:12px}
+select{background:#2a2f3a;color:var(--txt);border:1px solid #3a4150;border-radius:6px;padding:4px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+video{width:100%;max-height:420px;background:#000;border-radius:8px}
+canvas{width:100%;height:90px;display:block;margin-top:8px;cursor:pointer;background:var(--panel2);border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:500}
+tr.cur td{background:#262214}
+.mut{color:var(--mut)}.ok{color:var(--ok)}.err{color:var(--err)}
+textarea{width:100%;min-height:360px;background:#0b0d11;color:#d6e2ff;border:1px solid var(--line);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Menlo,monospace}
+img.prev{max-width:100%;border-radius:8px;border:1px solid var(--line)}
+.empty{color:var(--mut);padding:40px;text-align:center}
+#jobs td{font-size:12px}
+.prog{height:5px;background:#2a2f3a;border-radius:3px;overflow:hidden;min-width:60px}.prog i{display:block;height:100%;background:var(--blue)}
+#msg{white-space:pre-wrap;font-size:12px;margin-top:8px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}aside{border-right:0}}
+</style>
+</head>
+<body>
+<header><h1>✂️ <b>Clipador</b></h1><span class="mut">clipes de stream → Shorts · Reels · TikTok</span><span id="jobsum"></span></header>
+<div class="wrap">
+<aside>
+  <h2>Enviar material</h2>
+  <div id="drop">Arraste vídeos aqui<br><small>ou o chat: <code>&lt;nome&gt;.chat.json</code></small><input id="fi" type="file" multiple hidden></div>
+  <div id="upmsg" class="mut" style="font-size:12px;margin-top:6px"></div>
+  <h2>Biblioteca <button class="sm" onclick="loadFiles()" style="float:right">↻</button></h2>
+  <div id="files"></div>
+  <h2>Fila</h2>
+  <table id="jobs"></table>
+</aside>
+<main id="main"><div class="empty">Selecione ou envie um vídeo bruto.</div></main>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const api=async(u,o={})=>{const r=await fetch(u,o);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.statusText);return j};
+const post=(u,b)=>api(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
+const tc=s=>{s=Math.max(0,s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=Math.floor(s%60);return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(x).padStart(2,'0')};
+const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let S={files:[],cur:null,proj:null,spec:null,stopAt:null};
+
+async function loadFiles(){
+  S.files=await api('/api/files');
+  $('#files').innerHTML=S.files.length?S.files.map(f=>`<div class="file ${S.cur&&S.cur.file==f.file?'sel':''}" onclick="openFile('${encodeURIComponent(f.file)}')">
+   <div class="n">${esc(f.file)}</div>
+   <div class="m">${f.duration?tc(f.duration):'?'} · ${f.width||'?'}×${f.height||'?'} · ${f.size_mb} MB</div>
+   <span class="chip ${f.scanned?'on':''}">scan</span><span class="chip ${f.facecam?'on':''}">facecam</span><span class="chip ${f.chat?'on':''}">chat</span><span class="chip ${f.transcript?'on':''}">transcrição</span>
+   ${f.error?`<div class="err" style="font-size:12px">${esc(f.error)}</div>`:''}</div>`).join(''):'<div class="mut">Nenhum vídeo em raw/</div>';
+}
+
+async function openFile(enc){
+  const file=decodeURIComponent(enc);
+  S.cur=S.files.find(f=>f.file==file);S.spec=null;
+  loadFiles();await loadProject();
+}
+
+async function loadProject(keepSpec){
+  const f=S.cur;if(!f)return;
+  S.proj=await api('/api/project/'+encodeURIComponent(f.project));
+  const P=S.proj,C=P.candidates;
+  $('#main').innerHTML=`
+  <div class="bar">
+    <b style="font-size:16px">${esc(f.file)}</b>
+    <button class="pri" onclick="job('pipeline',{file:S.cur.file,top_render:5,presets:['shorts']})">⚡ Automático: scan + 5 rascunhos</button>
+    <button onclick="job('scan',{file:S.cur.file})">Escanear</button>
+    <button onclick="job('transcribe',{file:S.cur.file})" ${C?'':'disabled'} title="Transcreve só os candidatos (precisa do faster-whisper)">Transcrever candidatos</button>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <video id="vid" controls preload="metadata" src="/media/raw/${encodeURIComponent(f.file)}"></video>
+      <canvas id="tl" width="1200" height="90" title="clique para ir ao ponto"></canvas>
+      <div class="mut" style="font-size:12px;margin-top:4px">Curva = “calor” (áudio${C&&C.has_chat?' + chat':''}). Faixas amarelas = candidatos.</div>
+    </div>
+    <div class="card">
+      <h2>Facecam</h2>
+      ${P.facecam?`<img class="prev" src="${P.facecam_image}?${Date.now()}"><div class="mut" style="font-size:12px">rect ${JSON.stringify(P.facecam.rect)} · confiança ${P.facecam.confidence} · ${P.facecam.method}</div>`
+        :`<div class="mut">${C?'Nenhuma facecam detectada — layout cai para recorte automático no rosto/centro.':'Rode o scan para detectar.'}</div>`}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Candidatos ${C?`<span class="mut" style="text-transform:none">(${C.candidates.length})</span>`:''}</h2>
+    ${C?candTable(C.candidates):'<div class="mut">Ainda não escaneado.</div>'}
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h2>Receitas</h2>${specList(P.specs)}</div>
+    <div class="card" id="editor"><div class="mut">Selecione uma receita.</div></div>
+  </div>`;
+  drawTimeline();
+  const v=$('#vid');v.ontimeupdate=()=>{if(S.stopAt&&v.currentTime>=S.stopAt){v.pause();S.stopAt=null}drawTimeline()};
+  $('#tl').onclick=e=>{const r=e.target.getBoundingClientRect();const d=(C&&C.duration)||v.duration;if(d){v.currentTime=(e.clientX-r.left)/r.width*d;v.play()}};
+  if(keepSpec&&S.spec)openSpec(S.spec);
+}
+
+function candTable(c){
+  if(!c.length)return '<div class="mut">Nenhum candidato.</div>';
+  return `<table><tr><th>#</th><th>Trecho</th><th>Dur.</th><th>Score</th><th>Motivo</th><th></th></tr>`+
+  c.map(x=>`<tr><td>${x.id}</td><td><a href="#" onclick="playRange(${x.start},${x.end});return false">▶ ${x.tc}</a></td><td>${x.duration}s</td>
+  <td>${x.score}</td><td class="mut">${esc(x.reasons.join(', ')||'energia')}</td>
+  <td style="white-space:nowrap"><select id="pr_${x.id}"><option>shorts</option><option>reels</option><option>tiktok</option><option>youtube</option></select>
+  <button class="sm" onclick="mkSpec('${x.id}')">+ receita</button></td></tr>`).join('')+'</table>';
+}
+function specList(s){
+  if(!s.length)return '<div class="mut">Nenhuma receita ainda. Use “+ receita” num candidato ou o modo automático.</div>';
+  return '<table>'+s.map(x=>`<tr class="${S.spec==x.file?'cur':''}"><td><a href="#" onclick="openSpec('${x.file}');return false">${esc(x.file)}</a></td>
+   <td>${x.rendered?'<span class="ok">renderizado</span>':'<span class="mut">—</span>'}</td></tr>`).join('')+'</table>';
+}
+function playRange(a,b){const v=$('#vid');v.currentTime=a;S.stopAt=b;v.play();v.scrollIntoView({behavior:'smooth',block:'center'})}
+
+function drawTimeline(){
+  const cv=$('#tl');if(!cv)return;const C=S.proj.candidates;const g=cv.getContext('2d');
+  const W=cv.width,H=cv.height;g.clearRect(0,0,W,H);
+  const v=$('#vid');const d=(C&&C.duration)||v.duration||1;
+  if(C){
+    g.fillStyle='rgba(255,212,0,.18)';C.candidates.forEach(c=>g.fillRect(c.start/d*W,0,Math.max(2,(c.end-c.start)/d*W),H));
+    const pts=C.curve;if(pts.length){const mx=Math.max(4,...pts.map(p=>p[1]));
+      g.strokeStyle='#5aa9ff';g.lineWidth=1.5;g.beginPath();
+      pts.forEach((p,i)=>{const x=p[0]/d*W,y=H-4-Math.max(0,p[1])/mx*(H-10);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()}
+    g.fillStyle='#ffd400';g.font='11px sans-serif';C.candidates.forEach(c=>g.fillText(c.id,c.start/d*W+2,11));
+  }
+  g.fillStyle='#fff';g.fillRect(v.currentTime/d*W,0,2,H);
+}
+
+async function mkSpec(id){
+  const preset=$('#pr_'+id).value;
+  const r=await post('/api/autospec',{project:S.cur.project,file:S.cur.file,id,preset});
+  S.spec=r.file;await loadProject(true);
+}
+
+async function openSpec(file){
+  S.spec=file;const P=S.proj;const it=P.specs.find(s=>s.file==file);
+  const txt=await (await fetch(`/api/spec/${encodeURIComponent(P.name)}/${encodeURIComponent(file)}`)).text();
+  $('#editor').innerHTML=`<div class="bar"><b>${esc(file)}</b>
+    <button onclick="saveSpec()">Salvar</button><button onclick="validateSpec()">Validar</button>
+    <button onclick="renderSpec(true)">Render rascunho</button><button class="pri" onclick="renderSpec(false)">Render final</button></div>
+    <textarea id="specTxt" spellcheck="false">${esc(txt)}</textarea><div id="msg"></div>
+    ${it&&it.video?`<h2>Resultado</h2><video controls src="${it.video}?${Date.now()}" style="max-height:520px"></video>${it.preview?`<img class="prev" src="${it.preview}?${Date.now()}" style="margin-top:8px">`:''}`:''}`;
+  document.querySelectorAll('tr.cur').forEach(e=>e.classList.remove('cur'));
+}
+async function saveSpec(){
+  const P=S.proj;const t=$('#specTxt').value;
+  try{JSON.parse(t)}catch(e){$('#msg').innerHTML=`<span class="err">JSON inválido: ${esc(e.message)}</span>`;return false}
+  await api(`/api/spec/${encodeURIComponent(P.name)}/${encodeURIComponent(S.spec)}`,{method:'PUT',body:t});
+  $('#msg').innerHTML='<span class="ok">salvo</span>';return true;
+}
+const specPath=()=>`projects/${S.proj.name}/specs/${S.spec}`;
+async function validateSpec(){
+  if(!await saveSpec())return;
+  try{const r=await post('/api/validate',{path:specPath()});
+    $('#msg').innerHTML=`<span class="ok">OK</span> · ${r.format} · ${r.segments} trecho(s) · ${r.duration}s${r.warnings.length?'<br><span class="err">'+r.warnings.map(esc).join('<br>')+'</span>':''}<br><span class="mut">enquadramento resolvido: ${esc(JSON.stringify(r.reframes[0]))}</span>`}
+  catch(e){$('#msg').innerHTML=`<span class="err">${esc(e.message)}</span>`}
+}
+async function renderSpec(draft){
+  if(!await saveSpec())return;
+  await job('render',{spec:specPath(),draft});
+  $('#msg').innerHTML='<span class="mut">na fila… o resultado aparece aqui quando terminar.</span>';
+}
+async function job(kind,args){await post('/api/jobs',{kind,args});pollJobs()}
+
+let lastDone=null;
+async function pollJobs(){
+  const js=await api('/api/jobs?limit=12');
+  const running=js.filter(j=>j.status=='running').length,queued=js.filter(j=>j.status=='queued').length;
+  $('#jobsum').textContent=running||queued?`⏳ ${running} rodando · ${queued} na fila`:'fila vazia';
+  $('#jobs').innerHTML=js.map(j=>`<tr><td>#${j.id}</td><td>${j.kind}<div class="mut">${esc((j.args.file||j.args.spec||j.args.project||'').split('/').pop())}</div></td>
+   <td>${j.status=='running'?`<div class="prog"><i style="width:${j.progress*100}%"></i></div><span class="mut">${esc(j.message)}</span>`:
+   j.status=='error'?`<span class="err" title="${esc(j.message)}">erro</span>`:j.status=='done'?'<span class="ok">ok</span>':'<span class="mut">fila</span>'}</td></tr>`).join('');
+  const doneKey=js.filter(j=>j.status=='done'||j.status=='error').map(j=>j.id).join(',');
+  if(lastDone!==null&&doneKey!==lastDone){loadFiles();if(S.cur)loadProject(true)}
+  const err=js.find(j=>j.status=='error'&&j.kind=='render'&&j.args.spec&&S.spec&&j.args.spec.endsWith(S.spec));
+  if(err&&$('#msg')&&doneKey!==lastDone)$('#msg').innerHTML=`<span class="err">${esc(err.message)}</span>`;
+  lastDone=doneKey;
+}
+
+const drop=$('#drop'),fi=$('#fi');
+drop.onclick=()=>fi.click();fi.onchange=()=>upload([...fi.files]);
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('hover')};drop.ondragleave=()=>drop.classList.remove('hover');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hover');upload([...e.dataTransfer.files])};
+function upload(files){
+  files.forEach(f=>{const x=new XMLHttpRequest();x.open('POST','/api/upload?name='+encodeURIComponent(f.name));
+    x.upload.onprogress=e=>$('#upmsg').textContent=`${f.name}: ${Math.round(e.loaded/e.total*100)}%`;
+    x.onload=()=>{$('#upmsg').textContent=x.status==200?`${f.name}: enviado ✓`:`${f.name}: ${x.responseText}`;loadFiles()};x.send(f)});
+}
+loadFiles();pollJobs();setInterval(pollJobs,2000);
+</script>
+</body>
+</html>

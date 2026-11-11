@@ -14,5 +14,7 @@ Ferramenta de clipagem e edição de vídeo (YouTube, Shorts, Reels, TikTok) ope
 ## Código
 - `ff.py` tempo/probe/ffmpeg/fontes · `analyze.py` silêncio, cenas, energia, folha de contato
 - `transcript.py` faster-whisper/SRT · `captions.py` legendas .ass animadas
+- `faces.py` detecção de rosto (YuNet/Haar), recorte automático, facecam · `highlights.py` scan de stream (áudio+chat)
+- `jobs.py` fila SQLite + workers · `server.py` + `web/index.html` interface local (`python -m clipador serve`) · `workspace.py` pastas e receitas automáticas
 - `spec.py` validação e expansão da receita (jump cuts, mapa origem→saída) · `render.py` monta o filtergraph único
 - Ao adicionar um campo na receita: implementar em `render.py`/`spec.py`, documentar em `docs/RECEITA.md`, cobrir em `tests/`.

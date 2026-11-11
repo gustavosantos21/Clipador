@@ -42,6 +42,55 @@ def transcribe(path: str, out: str, model: str = "small", language: str | None =
     return data
 
 
+def transcribe_ranges(path: str, ranges: list[tuple[float, float]], out: str, model: str = "small",
+                      language: str | None = "pt", device: str = "auto", progress=None) -> dict:
+    """Transcreve só os trechos indicados (ex.: candidatos de uma stream de 6 h) e mescla no JSON `out`.
+
+    Os tempos ficam absolutos (do arquivo bruto), então a transcrição parcial funciona com as receitas.
+    """
+    import subprocess
+    import tempfile
+    try:
+        from faster_whisper import WhisperModel  # type: ignore
+    except ImportError as e:
+        raise ClipadorError("faster-whisper não está instalado. Rode: pip install faster-whisper") from e
+    wm = WhisperModel(model, device=device, compute_type="int8" if device in ("cpu", "auto") else "float16")
+    data = load(out) if Path(out).exists() else {"source": path, "language": language, "segments": [], "ranges": []}
+    done = [tuple(r) for r in data.get("ranges", [])]
+    merged = _merge_ranges(ranges)
+    with tempfile.TemporaryDirectory() as td:
+        for k, (a, b) in enumerate(merged):
+            if any(da <= a and b <= db for da, db in done):
+                continue
+            wav = Path(td) / f"r{k}.wav"
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{a:.3f}", "-t", f"{b - a:.3f}", "-i", path,
+                            "-vn", "-ac", "1", "-ar", "16000", str(wav)], check=True)
+            segs, info = wm.transcribe(str(wav), language=language, word_timestamps=True, vad_filter=True)
+            data["segments"] = [s for s in data["segments"] if not (a <= s["start"] < b)]
+            for s in segs:
+                words = [{"start": round(w.start + a, 3), "end": round(w.end + a, 3), "word": w.word.strip()}
+                         for w in (s.words or []) if w.word.strip()]
+                data["segments"].append({"start": round(s.start + a, 3), "end": round(s.end + a, 3),
+                                         "text": s.text.strip(), "words": words})
+            done.append((a, b))
+            if progress:
+                progress((k + 1) / len(merged))
+    data["segments"].sort(key=lambda s: s["start"])
+    data["ranges"] = [list(r) for r in _merge_ranges(done)]
+    save(data, out)
+    return data
+
+
+def _merge_ranges(ranges) -> list[tuple[float, float]]:
+    out: list[tuple[float, float]] = []
+    for a, b in sorted((float(a), float(b)) for a, b in ranges):
+        if out and a <= out[-1][1] + 1:
+            out[-1] = (out[-1][0], max(out[-1][1], b))
+        else:
+            out.append((a, b))
+    return out
+
+
 def import_srt(srt_path: str, out: str, source: str | None = None) -> dict:
     """Converte SRT em transcrição. Tempos de palavra são estimados proporcionalmente ao tamanho."""
     text = Path(srt_path).read_text(encoding="utf-8-sig")

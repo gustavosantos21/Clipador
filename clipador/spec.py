@@ -117,7 +117,7 @@ def expand_segments(spec: dict) -> list[dict]:
             "src_w": info.get("width"), "src_h": info.get("height"),
             "speed": float(seg.get("speed", 1.0)),
             "volume": float(seg.get("volume", 1.0)),
-            "reframe": seg.get("reframe", spec.get("reframe", {"mode": "crop"})),
+            "reframe": resolve_reframe(spec, src, info, start, end, seg.get("reframe", spec.get("reframe", {"mode": "crop"}))),
             "zooms": [dict(z, start=parse_time(z["start"]), end=parse_time(z["end"])) for z in seg.get("zooms", [])],
         }
         rs = seg.get("remove_silence", global_rs)
@@ -153,3 +153,53 @@ def source_to_output_map(segments: list[dict], transition: float = 0.0):
         return None
 
     return f, offsets
+
+
+def resolve_reframe(spec: dict, src: str, info: dict, start: float, end: float, rf: dict) -> dict:
+    """Resolve enquadramentos automáticos ("x": "auto", "mode": "stream") em crop/split concretos."""
+    rf = dict(rf)
+    if info.get("is_image") or not info.get("width"):
+        return rf if rf.get("mode") != "stream" else {"mode": "blur"}
+    fmt = output_format(spec)
+    out_aspect = fmt["width"] / fmt["height"]
+    mode = rf.get("mode", "crop")
+    if mode == "crop" and rf.get("x") == "auto":
+        from .faces import auto_crop_keyframes
+        r = auto_crop_keyframes(src, start, end, out_aspect / float(rf.get("scale", 1.0)),
+                                step=float(rf.get("step", 0.5)), deadzone=float(rf.get("deadzone", 0.07)))
+        rf["x"] = r["x"]
+        rf["_auto"] = {"hits": r["hits"], "samples": r["samples"]}
+    elif mode == "stream":
+        rf = resolve_stream_layout(spec, src, info, rf, out_aspect, fmt)
+    return rf
+
+
+def resolve_stream_layout(spec: dict, src: str, info: dict, rf: dict, out_aspect: float, fmt: dict) -> dict:
+    """Layout de stream: facecam em cima, gameplay embaixo. Sem facecam -> fallback."""
+    cam = rf.get("facecam", "auto")
+    if cam == "auto":
+        from .faces import detect_facecam
+        det = detect_facecam(src)
+        cam = det["rect"] if det else None
+    if not cam:
+        fb = rf.get("fallback", "crop")
+        return {"mode": "crop", "x": rf.get("game_x", 0.5)} if fb == "crop" else {"mode": fb}
+    ratio = float(rf.get("ratio", 0.38))
+    zoom = float(rf.get("game_zoom", 1.0))
+    src_aspect = info["width"] / info["height"]
+    panel_aspect = fmt["width"] / (fmt["height"] * (1 - ratio))
+    w = min(1.0, panel_aspect / src_aspect / zoom)
+    h = min(1.0, w * src_aspect / panel_aspect) if w >= 1.0 else 1.0 / zoom
+    gx = float(rf.get("game_x", 0.5))
+    gy = float(rf.get("game_y", 0.5))
+    x = min(max(gx - w / 2, 0.0), 1 - w)
+    y = min(max(gy - h / 2, 0.0), 1 - h)
+    # evita mostrar a webcam de novo dentro do recorte do jogo
+    cx, cy, cw, ch = cam
+    if rf.get("avoid_facecam", True) and "game_x" not in rf and cy < y + h and cy + ch > y and cx < x + w and cx + cw > x:
+        if cx + cw / 2 < 0.5:
+            x = min(cx + cw, 1 - w)
+        else:
+            x = max(cx - w, 0.0)
+    return {"mode": "split", "top": list(cam), "bottom": [round(x, 4), round(y, 4), round(w, 4), round(h, 4)],
+            "ratio": ratio, "_facecam": list(cam)}

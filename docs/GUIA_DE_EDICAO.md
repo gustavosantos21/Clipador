@@ -41,6 +41,13 @@ Critérios para escolher trechos no bruto:
 - Slide, gráfico ou algo que não pode ser cortado: `blur`.
 - Sempre conferir a folha de contato do resultado (`--preview`) para ver se ninguém ficou cortado.
 
+### Streams (GTA e jogos em geral)
+
+- Layout padrão: `{"mode": "stream", "facecam": "auto"}` — webcam em cima (38%), jogo embaixo. Confira `facecam.jpg`; se a caixa amarela não bater com a webcam, passe o `rect` manual.
+- Se a ação do jogo está fora do centro (ex.: minimapa, carro à direita), ajuste `game_x`. Em perseguição/tiroteio, `game_zoom` 1.1–1.25 deixa mais legível no celular.
+- Momento sem reação do streamer (só jogo) → `{"mode": "crop", "x": 0.5}` ou `blur`.
+- Streamer sem webcam → `{"mode": "crop", "x": "auto"}` não ajuda (não há rosto); use `crop` no centro da ação.
+
 ## 5. Texto e legendas
 
 - **Legenda sempre ligada** em vídeo curto (a maioria assiste sem som). Máx 3 palavras por bloco, caixa alta, contorno grosso.
@@ -64,7 +71,16 @@ Coloque os arquivos em `assets/overlays/` e descreva aqui como usá-los. Sugest�
 | CTA "Siga" | `assets/overlays/cta_siga.mov` | `bottom`, acima da legenda | últimos 3 s |
 | Moldura | `assets/overlays/moldura.png` | `fullscreen: true` | vídeo todo |
 
-## 8. Checklist antes de entregar
+## 8. Clipes de stream de GTA
+
+- **O que vira clipe:** fail engraçado, perseguição/fuga improvável, reação exagerada do streamer, glitch, momento de RP (roleplay) com fala marcante, conquista difícil, interação com chat/doação.
+- **Gancho:** comece no lance (ou 1–2 s antes); se precisar de contexto, ponha o pico como gancho e volte (segmento repetido).
+- **Duração:** 20–40 s. Clipe de stream envelhece rápido — publicar no mesmo dia vale mais que perfeição.
+- **Título na tela:** curto, curioso, sem spoiler do final (“ele achou que ia dar certo…”).
+- **Crédito:** nome do streamer na tela (overlay/texto pequeno) e na descrição.
+- **Série/formatos:** “melhores momentos do dia”, “top 5 da semana” (vários candidatos numa receita), “reação do streamer a …”.
+
+## 9. Checklist antes de entregar
 
 - [ ] Gancho nos primeiros 3 s
 - [ ] Duração dentro do limite da plataforma

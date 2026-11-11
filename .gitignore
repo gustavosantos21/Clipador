@@ -13,3 +13,5 @@ projects/*/work/
 *.wav
 *.mp3
 !assets/**
+.cache/
+projects/stream_gta_teste/

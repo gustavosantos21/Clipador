@@ -7,7 +7,10 @@ dependencies = ["numpy", "pillow"]
 
 [project.optional-dependencies]
 transcricao = ["faster-whisper"]
-dev = ["pytest"]
+rosto = ["opencv-python-headless>=4.8,<5"]
+web = ["starlette>=0.39", "uvicorn"]
+tudo = ["faster-whisper", "opencv-python-headless>=4.8,<5", "starlette>=0.39", "uvicorn"]
+dev = ["pytest", "scikit-image"]
 
 [project.scripts]
 clipador = "clipador.cli:main"
@@ -18,3 +21,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["clipador"]
+
+[tool.setuptools.package-data]
+clipador = ["web/*.html"]

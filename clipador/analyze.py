@@ -95,22 +95,35 @@ def detect_scenes(path: str, threshold: float = 0.3, start: float | None = None,
 
 
 def audio_energy(path: str, window: float = 0.5, start: float | None = None,
-                 end: float | None = None) -> tuple[np.ndarray, np.ndarray]:
-    """RMS em dB por janela. Retorna (tempos, db)."""
-    sr = 16000
+                 end: float | None = None, sr: int = 8000) -> tuple[np.ndarray, np.ndarray]:
+    """RMS em dB por janela. Lê o áudio em blocos via pipe — memória constante mesmo em VODs de 10 h.
+    Retorna (tempos, db)."""
     cmd = ["ffmpeg", "-v", "error"] + _range_args(start, end) + ["-i", path, "-vn", "-ac", "1", "-ar", str(sr),
                                                                   "-f", "s16le", "-"]
-    raw = subprocess.run(cmd, capture_output=True).stdout
-    if not raw:
-        return np.array([]), np.array([])
-    x = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
     n = int(sr * window)
-    k = len(x) // n
-    if k == 0:
+    block = n * 2 * 240  # ~2 min de áudio por leitura
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    vals: list[np.ndarray] = []
+    rest = b""
+    try:
+        while True:
+            buf = proc.stdout.read(block)
+            if not buf:
+                break
+            buf = rest + buf
+            usable = (len(buf) // (n * 2)) * n * 2
+            rest = buf[usable:]
+            if usable:
+                x = np.frombuffer(buf[:usable], dtype=np.int16).astype(np.float32) / 32768.0
+                vals.append(np.sqrt(np.mean(x.reshape(-1, n) ** 2, axis=1) + 1e-12))
+    finally:
+        proc.stdout.close()
+        proc.wait()
+    if not vals:
         return np.array([]), np.array([])
-    rms = np.sqrt(np.mean(x[: k * n].reshape(k, n) ** 2, axis=1) + 1e-12)
+    rms = np.concatenate(vals)
     db = 20 * np.log10(rms)
-    t = np.arange(k) * window + (start or 0.0)
+    t = np.arange(len(db)) * window + (start or 0.0)
     return t, db
 
 
