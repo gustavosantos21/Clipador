@@ -1,0 +1,4 @@
+{"_desc": "Igual ao bold_pop, destaque verde e sem pulo (mais sóbrio).",
+ "font": "Inter Black", "size": 0.05, "uppercase": true, "mode": "highlight",
+ "primary": "#FFFFFF", "highlight": "#39FF14", "outline_color": "#000000", "outline": 0.10,
+ "position": "lower", "max_words": 3, "max_chars": 18}

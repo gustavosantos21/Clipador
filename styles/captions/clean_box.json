@@ -1,0 +1,4 @@
+{"_desc": "Legenda limpa com caixa translúcida, sem animação. Para YouTube horizontal / conteúdo educativo.",
+ "font": "Inter Bold", "size": 0.045, "uppercase": false, "mode": "static",
+ "primary": "#FFFFFF", "box": true, "box_color": "#000000A0",
+ "position": "bottom", "max_words": 10, "max_chars": 42, "gap_break": 0.8}

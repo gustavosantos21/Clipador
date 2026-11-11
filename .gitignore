@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# material bruto e saídas não vão pro git (arquivos grandes)
+raw/
+out/
+projects/*/work/
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+!assets/**

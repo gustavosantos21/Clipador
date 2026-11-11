@@ -1,0 +1,4 @@
+{"_desc": "Padrão para Shorts/Reels/TikTok: caixa alta, contorno grosso, palavra falada em amarelo com pulo.",
+ "font": "Inter Black", "size": 0.052, "uppercase": true, "mode": "pop",
+ "primary": "#FFFFFF", "highlight": "#FFE600", "outline_color": "#000000", "outline": 0.11,
+ "position": "lower", "max_words": 3, "max_chars": 18}

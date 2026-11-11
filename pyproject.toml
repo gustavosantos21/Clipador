@@ -1,0 +1,20 @@
+[project]
+name = "clipador"
+version = "0.1.0"
+description = "Ferramenta de clipagem e edição de vídeo dirigida por receitas JSON (YouTube, Shorts, Reels, TikTok)"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pillow"]
+
+[project.optional-dependencies]
+transcricao = ["faster-whisper"]
+dev = ["pytest"]
+
+[project.scripts]
+clipador = "clipador.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["clipador"]

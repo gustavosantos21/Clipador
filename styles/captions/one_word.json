@@ -1,0 +1,4 @@
+{"_desc": "Uma palavra por vez, grande, no centro. Ritmo rápido, bom para frases de impacto.",
+ "font": "Inter Black", "size": 0.075, "uppercase": true, "mode": "word",
+ "primary": "#FFFFFF", "outline_color": "#000000", "outline": 0.12, "pop_scale": 1.25,
+ "position": "center", "max_words": 1}

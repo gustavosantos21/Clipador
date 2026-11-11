@@ -1,0 +1,4 @@
+{"_desc": "Preenchimento progressivo (karaokê) — bom para música e falas lentas.",
+ "font": "Inter Black", "size": 0.048, "uppercase": false, "mode": "karaoke",
+ "primary": "#FFE600", "karaoke_base": "#FFFFFF", "outline_color": "#000000", "outline": 0.10,
+ "position": "lower", "max_words": 5, "max_chars": 28}
