@@ -52,4 +52,5 @@ python -m clipador presets
 - [Receita JSON — referência de campos](docs/RECEITA.md)
 - [Guia de edição — padrões de estilo](docs/GUIA_DE_EDICAO.md)
 - [Escala para muitas horas de stream](docs/ESCALA.md)
+- [Entrega e publicação (YouTube automático, TikTok/Reels)](docs/PUBLICACAO.md)
 - [Agente editor](.claude/agents/clipador-editor.md)

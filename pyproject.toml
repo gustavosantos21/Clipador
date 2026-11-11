@@ -9,7 +9,9 @@ dependencies = ["numpy", "pillow"]
 transcricao = ["faster-whisper"]
 rosto = ["opencv-python-headless>=4.8,<5"]
 web = ["starlette>=0.39", "uvicorn"]
-tudo = ["faster-whisper", "opencv-python-headless>=4.8,<5", "starlette>=0.39", "uvicorn"]
+publicar = ["google-api-python-client", "google-auth-oauthlib"]
+tudo = ["faster-whisper", "opencv-python-headless>=4.8,<5", "starlette>=0.39", "uvicorn",
+        "google-api-python-client", "google-auth-oauthlib"]
 dev = ["pytest", "scikit-image"]
 
 [project.scripts]

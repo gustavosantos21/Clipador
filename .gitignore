@@ -15,3 +15,5 @@ projects/*/work/
 !assets/**
 .cache/
 projects/stream_gta_teste/
+secrets/
+entregas/

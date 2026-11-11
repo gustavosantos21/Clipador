@@ -34,7 +34,16 @@ Para cada vídeo bruto `raw/<nome>.<ext>`, use a pasta de projeto `projects/<nom
 
 7. **Render final** — `python -m clipador render <specs...> --preview` (sem `--draft`).
 
-8. **Entregar** — resuma para o usuário: lista de arquivos em `out/<nome>/`, duração, gancho de cada um e uma sugestão de título/legenda de post + hashtags por plataforma.
+8. **Textos de postagem** — preencha `post` em cada receita (título curto e curioso, descrição, hashtags, `credit` com o canal da live, `thumb_text` de até 4 palavras). Para o vídeo longo, renomeie os `chapters` com o que acontece em cada momento.
+
+9. **Entregar** — `python -m clipador package <specs...>` gera `entregas/<data>/` com vídeo + thumbnail + `post.md`. Abra as thumbnails (Read) para conferir. Mande ao usuário os arquivos (SendUserFile, se disponível) e um resumo: duração, gancho e título de cada um.
+
+10. **Publicar (só quando o usuário pedir/autorizar)** — `python -m clipador publish <spec> --publish-at <ISO>` sobe no YouTube privado/agendado (precisa de `secrets/youtube_token.json`, veja `docs/PUBLICACAO.md`). Nunca publique como `public` sem o usuário pedir explicitamente. TikTok/Reels: entregue o pacote para postagem manual.
+
+## Vídeo longo
+
+- Compilação: `python -m clipador compile raw/<vod>.mp4 -n 12` → receita `compilacao_youtube.json` com os melhores momentos em ordem cronológica, transição e capítulos. Revise a ordem (comece pelo momento mais forte como "cold open" se fizer sentido), ajuste cortes e capítulos.
+- Para um corte longo de um único trecho (ex.: missão inteira de 15 min), escreva a receita à mão com `preset: "youtube"`, `remove_silence` desligado em gameplay e legenda `clean_box`.
 
 ## Stream longa (live de jogo, GTA etc.)
 

@@ -158,6 +158,40 @@ def cmd_serve(a):
     serve(a.host, a.port, a.workers)
 
 
+def cmd_compile(a):
+    from .workspace import RAW, make_compilation_spec, project_name, work
+    name = project_name(a.file)
+    cands = json.loads((work(name) / "candidates.json").read_text())["candidates"]
+    p = make_compilation_spec(name, Path(a.file).name, cands, n=a.n, preset=a.preset)
+    print(p)
+
+
+def cmd_thumb(a):
+    from .deliver import make_thumbnail
+    size = (1080, 1920) if a.vertical else (1280, 720)
+    face = [float(x) for x in a.face.split(",")] if a.face else None
+    print(make_thumbnail(a.file, a.out, a.text or "", t=parse_time(a.at) if a.at else None, size=size, face_rect=face))
+
+
+def cmd_package(a):
+    from .deliver import package
+    res = package(a.specs, a.dest, thumbs=not a.no_thumbs)
+    print(f"pacote em {res['dest']} ({len(res['clips'])} vídeos)")
+
+
+def cmd_publish(a):
+    from .publish import youtube_upload
+    for s in a.specs:
+        _print(youtube_upload(s, privacy=a.privacy, publish_at=a.publish_at, thumbnail=a.thumbnail,
+                              dry_run=a.dry_run))
+
+
+def cmd_publish_auth(a):
+    from .publish import youtube_auth
+    youtube_auth(headless=a.headless)
+    print("YouTube autorizado (token em secrets/youtube_token.json)")
+
+
 def cmd_presets(a):
     for k, v in PRESETS.items():
         lim = f"máx {v['max_duration']}s" if v["max_duration"] else "sem limite"
@@ -239,6 +273,32 @@ def main(argv=None):
     s.add_argument("--range", action="append", help="INICIO~FIM (pode repetir)")
     s.add_argument("--model", default="small"); s.add_argument("--language", default="pt")
     s.set_defaults(fn=cmd_transcribe_ranges)
+
+    s = sub.add_parser("compile", help="receita de vídeo longo (melhores momentos) a partir dos candidatos")
+    s.add_argument("file", help="vídeo bruto (raw/...)"); s.add_argument("-n", type=int, default=10)
+    s.add_argument("--preset", default="youtube")
+    s.set_defaults(fn=cmd_compile)
+
+    s = sub.add_parser("thumb", help="gerar thumbnail")
+    s.add_argument("file"); s.add_argument("-o", "--out", required=True); s.add_argument("--text")
+    s.add_argument("--at"); s.add_argument("--face", help="x,y,w,h normalizado (facecam)")
+    s.add_argument("--vertical", action="store_true")
+    s.set_defaults(fn=cmd_thumb)
+
+    s = sub.add_parser("package", help="pacote de entrega: vídeo + thumbnail + textos de postagem")
+    s.add_argument("specs", nargs="+"); s.add_argument("--dest"); s.add_argument("--no-thumbs", action="store_true")
+    s.set_defaults(fn=cmd_package)
+
+    s = sub.add_parser("publish", help="publicar no YouTube (Shorts ou longo)")
+    s.add_argument("specs", nargs="+")
+    s.add_argument("--privacy", default="private", choices=["private", "unlisted", "public"])
+    s.add_argument("--publish-at", help="agendar, ISO 8601 com fuso: 2026-11-20T18:00:00-03:00")
+    s.add_argument("--thumbnail"); s.add_argument("--dry-run", action="store_true")
+    s.set_defaults(fn=cmd_publish)
+
+    s = sub.add_parser("publish-auth", help="autorizar a conta do YouTube (uma vez)")
+    s.add_argument("platform", choices=["youtube"]); s.add_argument("--headless", action="store_true")
+    s.set_defaults(fn=cmd_publish_auth)
 
     s = sub.add_parser("worker", help="processar a fila de jobs")
     s.add_argument("-n", type=int, default=2); s.set_defaults(fn=cmd_worker)

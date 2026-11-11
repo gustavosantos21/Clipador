@@ -174,7 +174,40 @@ def _h_pipeline(job, prog):
     return {**r, "specs": specs, "render_jobs": ids}
 
 
-HANDLERS = {"scan": _h_scan, "transcribe": _h_transcribe, "autospec": _h_autospec,
+def _h_compile(job, prog):
+    from .workspace import make_compilation_spec, rel, work
+    a = job["args"]
+    cands = json.loads((work(a["project"]) / "candidates.json").read_text())["candidates"]
+    p = make_compilation_spec(a["project"], a["file"], cands, n=int(a.get("n", 10)), preset=a.get("preset", "youtube"))
+    rid = None
+    if a.get("render", True):
+        rid = enqueue("render", {"spec": rel(p), "draft": a.get("draft", True)})
+    return {"spec": rel(p), "render_job": rid}
+
+
+def _h_package(job, prog):
+    from .deliver import package
+    from .workspace import PROJECTS
+    a = job["args"]
+    specs = a.get("specs")
+    if not specs:  # todas as receitas renderizadas do projeto
+        from .spec import load_spec, resolve_path
+        specs = []
+        for sp in sorted((PROJECTS / a["project"] / "specs").glob("*.json")):
+            spec = load_spec(str(sp))
+            if Path(resolve_path(spec, spec["output"])).exists():
+                specs.append(str(sp))
+    return package(specs, a.get("dest"))
+
+
+def _h_publish(job, prog):
+    from .publish import youtube_upload
+    a = job["args"]
+    return youtube_upload(a["spec"], privacy=a.get("privacy", "private"), publish_at=a.get("publish_at"),
+                          thumbnail=a.get("thumbnail"), progress=lambda p: prog(p, "enviando"))
+
+
+HANDLERS = {"compile": _h_compile, "package": _h_package, "publish": _h_publish,"scan": _h_scan, "transcribe": _h_transcribe, "autospec": _h_autospec,
             "render": _h_render, "pipeline": _h_pipeline}
 
 

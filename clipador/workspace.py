@@ -111,3 +111,46 @@ def make_spec_from_candidate(name: str, raw_file: str, cand: dict, preset: str =
     out = specs_dir(name) / f"{cand['id']}_{preset}.json"
     out.write_text(json.dumps(spec, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
+
+
+def make_compilation_spec(name: str, raw_file: str, cands: list[dict], n: int = 10, preset: str = "youtube",
+                          transition: float = 0.5, min_score: float = 0.0) -> Path:
+    """Vídeo longo: os N melhores momentos em ordem cronológica, com transição e capítulos."""
+    from .ff import fmt_time
+    chosen = sorted([c for c in cands if c["score"] >= min_score][:n], key=lambda c: c["start"])
+    if not chosen:
+        raise ValueError("nenhum candidato para a compilação")
+    w = work(name)
+    vertical = preset not in ("youtube", "youtube4k")
+    fc = w / "facecam.json"
+    if vertical:
+        reframe = ({"mode": "stream", "facecam": json.loads(fc.read_text())["rect"]} if fc.exists()
+                   else {"mode": "crop", "x": "auto"})
+    else:
+        reframe = {"mode": "crop", "x": 0.5}  # 16:9 -> 16:9 não corta nada
+    chapters, acc = [], 0.0
+    for i, c in enumerate(chosen):
+        mm = fmt_time(acc, ms=False)
+        chapters.append(f"{mm[3:] if mm.startswith('00:') else mm} Momento {i + 1}")
+        acc += (c["end"] - c["start"]) - (transition if i + 1 < len(chosen) else 0)
+    spec = {
+        "title": f"{name} — melhores momentos",
+        "notes": "Compilação automática. Revise a ordem, renomeie os capítulos e escreva título/descrição em `post`.",
+        "source": rel(RAW / raw_file),
+        "output": rel(OUT / name / f"compilacao_{preset}.mp4"),
+        "preset": preset,
+        "reframe": reframe,
+        "segments": [{"start": c["start"], "end": c["end"], "label": c["id"]} for c in chosen],
+        "transition": {"type": "fade", "duration": transition},
+        "audio": {"normalize": True, "lufs": -14},
+        "fade_in": 0.5,
+        "fade_out": 1.0,
+        "post": {"title": f"MELHORES MOMENTOS — {name}", "description": "", "hashtags": [],
+                 "chapters": chapters},
+    }
+    tp = w / "transcript.json"
+    if tp.exists():
+        spec["captions"] = {"transcript": rel(tp), "style": "clean_box" if not vertical else "bold_pop"}
+    out = specs_dir(name) / f"compilacao_{preset}.json"
+    out.write_text(json.dumps(spec, ensure_ascii=False, indent=1), encoding="utf-8")
+    return out

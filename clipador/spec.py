@@ -14,7 +14,7 @@ from .presets import PRESETS, get_preset
 
 TOP_KEYS = {"source", "output", "preset", "width", "height", "fps", "reframe", "segments", "transition",
             "overlays", "texts", "captions", "audio", "fade_in", "fade_out", "remove_silence", "quality",
-            "title", "notes", "background_color", "color", "$schema"}
+            "title", "notes", "background_color", "color", "$schema", "post"}
 SEG_KEYS = {"source", "start", "end", "speed", "reframe", "zooms", "remove_silence", "label", "mute", "volume"}
 
 

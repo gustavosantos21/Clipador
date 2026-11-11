@@ -94,6 +94,8 @@ async function loadProject(keepSpec){
     <button class="pri" onclick="job('pipeline',{file:S.cur.file,top_render:5,presets:['shorts']})">⚡ Automático: scan + 5 rascunhos</button>
     <button onclick="job('scan',{file:S.cur.file})">Escanear</button>
     <button onclick="job('transcribe',{file:S.cur.file})" ${C?'':'disabled'} title="Transcreve só os candidatos (precisa do faster-whisper)">Transcrever candidatos</button>
+    <button onclick="job('compile',{project:S.cur.project,file:S.cur.file,n:10})" ${C?'':'disabled'} title="Vídeo longo 16:9 com os 10 melhores momentos e capítulos">🎬 Vídeo longo</button>
+    <button onclick="job('package',{project:S.cur.project})" ${P.specs.some(s=>s.rendered)?'':'disabled'} title="Copia vídeos renderizados + thumbnail + textos de postagem para entregas/">📦 Pacote de entrega</button>
   </div>
   <div class="grid2">
     <div class="card">

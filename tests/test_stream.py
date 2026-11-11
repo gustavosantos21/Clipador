@@ -93,3 +93,37 @@ def test_jobs_queue(tmp_path, monkeypatch):
     assert jobs.claim("w3") is None
     jobs.update(a, status="done", result={"ok": 1})
     assert jobs.get(a)["result"] == {"ok": 1}
+
+
+def test_compile_package_publish_dryrun(faces_media, tmp_path, monkeypatch):
+    """Vídeo longo (compilação) -> pacote de entrega -> payload do YouTube."""
+    from clipador import workspace
+    from clipador.deliver import package
+    from clipador.ff import probe
+    from clipador.publish import youtube_payload
+    from clipador.render import render
+    from clipador.spec import load_spec
+    monkeypatch.setattr(workspace, "RAW", faces_media["dir"])
+    monkeypatch.setattr(workspace, "OUT", tmp_path / "out")
+    monkeypatch.setattr(workspace, "PROJECTS", tmp_path / "projects")
+    cands = [{"id": "c01", "start": 5.0, "end": 15.0, "score": 9},
+             {"id": "c02", "start": 28.0, "end": 38.0, "score": 12},
+             {"id": "c03", "start": 45.0, "end": 55.0, "score": 3}]
+    sp = workspace.make_compilation_spec("stream", "stream.mp4", cands, n=3)
+    spec = json.loads(sp.read_text())
+    assert [s["label"] for s in spec["segments"]] == ["c01", "c02", "c03"]   # ordem cronológica
+    assert spec["post"]["chapters"][0].startswith("00:00")
+    spec["output"] = str(tmp_path / "out" / "comp.mp4")
+    spec["source"] = faces_media["stream"]
+    spec["post"]["title"] = "Os melhores momentos da live"
+    sp.write_text(json.dumps(spec))
+    meta = render(str(sp), draft=True)
+    assert abs(probe(meta["output"])["duration"] - (30 - 2 * 0.5)) < 0.2
+    res = package([str(sp)], str(tmp_path / "entrega"))
+    item = res["clips"][0]
+    assert (tmp_path / "entrega" / "comp" / "thumbnail.jpg").exists()
+    desc = item["platforms"]["youtube"]["description"]
+    assert "00:00 Momento 1" in desc and "#shorts" not in desc
+    body = youtube_payload(load_spec(str(sp)), publish_at="2026-11-20T18:00:00-03:00")
+    assert body["status"]["privacyStatus"] == "private" and body["status"]["publishAt"]
+    assert body["_short"] is False
