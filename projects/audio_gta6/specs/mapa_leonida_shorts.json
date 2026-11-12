@@ -1,0 +1,106 @@
+{
+ "title": "Tour pelo mapa de Leonida (GTA 6)",
+ "notes": "Feito só com áudio (WhatsApp). Ilustrações próprias em projects/audio_gta6/arte.py, base montada por montar.py. Cortes removem as regravações (16–34 s e 62–76 s do áudio).",
+ "source": "raw/audio_gta6.mp4",
+ "output": "out/audio_gta6/mapa_leonida_shorts.mp4",
+ "preset": "shorts",
+ "reframe": {
+  "mode": "crop",
+  "x": 0.5
+ },
+ "segments": [
+  {
+   "start": 1.6,
+   "end": 15.4,
+   "label": "gancho",
+   "zooms": [
+    {
+     "start": 11.2,
+     "end": 12.9,
+     "scale": 1.12,
+     "ramp": 0
+    }
+   ]
+  },
+  {
+   "start": 34.2,
+   "end": 43.15,
+   "label": "vice",
+   "zooms": [
+    {
+     "start": 41.5,
+     "end": 43.1,
+     "scale": 1.08,
+     "ramp": 0
+    }
+   ]
+  },
+  {
+   "start": 43.6,
+   "end": 61.3,
+   "label": "keys+grass",
+   "zooms": [
+    {
+     "start": 59.75,
+     "end": 61.3,
+     "scale": 1.08,
+     "ramp": 0
+    }
+   ]
+  },
+  {
+   "start": 76.45,
+   "end": 83.3,
+   "label": "port",
+   "zooms": [
+    {
+     "start": 82.2,
+     "end": 83.3,
+     "scale": 1.12,
+     "ramp": 0
+    }
+   ]
+  },
+  {
+   "start": 83.6,
+   "end": 103.85,
+   "label": "ambrosia+kalaga+pergunta"
+  },
+  {
+   "start": 106.55,
+   "end": 117.3,
+   "label": "cta",
+   "zooms": [
+    {
+     "start": 111.65,
+     "end": 113.75,
+     "scale": 1.12,
+     "ramp": 0
+    }
+   ]
+  }
+ ],
+ "captions": {
+  "transcript": "projects/audio_gta6/work/transcript.json",
+  "style": "bold_pop"
+ },
+ "audio": {
+  "normalize": true,
+  "lufs": -14
+ },
+ "fade_out": 0.4,
+ "post": {
+  "title": "As 6 regiões do mapa do GTA 6 🗺️",
+  "description": "Qual região de Leonida você vai visitar primeiro? Comenta aí 👇\nLive de GTA 6 no dia do lançamento: me segue que faltam poucos seguidores pra liberar a live!",
+  "hashtags": [
+   "#gta6",
+   "#gta",
+   "#leonida",
+   "#vicecity",
+   "#gtavi"
+  ],
+  "thumbnail": {
+   "time": 0.5
+  }
+ }
+}
